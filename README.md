@@ -12,7 +12,7 @@ This project uses Puppeteer to automate a Google search, scrape the content from
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/yourusername/puppeteer-google-search-scraper.git
+    git clone https://github.com/natnael6825/Goole_Scraper.git
     cd puppeteer-google-search-scraper
     ```
 
