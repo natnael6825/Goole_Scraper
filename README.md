@@ -1,6 +1,6 @@
 # Puppeteer Google Search Scraper
 
-This project uses Puppeteer to automate a Google search, scrape the content from the search results, and save the content into a file named after the search query.
+This project uses Puppeteer to automate a Google search, scrape the content from the search results, and save the content into files named after the search queries from a CSV file.
 
 ## Prerequisites
 
@@ -24,32 +24,39 @@ This project uses Puppeteer to automate a Google search, scrape the content from
 
 ## Usage
 
-1. Run the application:
+1. Prepare your CSV file:
+
+    Ensure your CSV file is named `Finale top 100.csv` and placed in the root directory of the project. The CSV file should contain a column with the names/keywords you want to scrape. 
+
+2. Run the application:
 
     ```bash
     node app.js
     ```
 
-2. Enter your search query when prompted:
+3. Follow the prompts:
 
-    ```
-    Enter your search query: [your search query here]
-    ```
+    - Enter the column name to use:
+      ```
+      Enter the column name to use: [column name here]
+      ```
+    - Enter the start index:
+      ```
+      Enter the start index: [start index here]
+      ```
+    - Enter the stop index:
+      ```
+      Enter the stop index: [stop index here]
+      ```
 
-3. The script will perform a Google search using the query you provided, scrape the content from the top search results, and save all the content into a single file. The file will be named after your search query with underscores replacing spaces and followed by `_results.txt`.
+    The script will process the names/keywords from the specified range in the CSV file, perform Google searches using those names/keywords, scrape the content from the top search results, and save the content into files. Each file will be named after the corresponding search query with underscores replacing spaces, followed by `_results.txt`.
+
+4. View the results:
+
+    The results will be saved in the `scraper_results` directory.
 
 ## Example
 
-If you enter `Albert Einstein` as the search query, the output file will be named `Albert_Einstein_results.txt`.
+If your CSV file has a column `Keyword` with the name `Albert Einstein` in the specified range, the output file will be named `Albert_Einstein_results.txt`.
 
-## Troubleshooting
 
-If you encounter any issues, ensure that you have the necessary permissions to write to the directory and that your network connection is stable.
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

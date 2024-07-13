@@ -1,28 +1,19 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const path = require('path');
+const csv = require('csv-parser');
 const readline = require('readline');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-let searchQuery = ''; // Initialize searchQuery variable
-
-const askQuestion = () => {
-  return new Promise((resolve) => {
-    rl.question('Enter your search query: ', (answer) => {
-      searchQuery = answer.trim(); // Store user input as searchQuery
-      resolve();
-    });
-  });
-};
-
 const numResults = 10;
-let outputFile = ''; // Initialize outputFile variable
+const outputDir = 'scraper_results';
 
-const setupOutputFile = () => {
-  outputFile = `${searchQuery.replace(/ /g, '_')}_results.txt`; // Dynamically generate output file name
+// Create output directory if it doesn't exist
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir);
+}
+
+const setupOutputFile = (name) => {
+  return path.join(outputDir, `${name.replace(/ /g, '_')}_results.txt`); // Dynamically generate output file name
 };
 
 const searchGoogle = async (query, numResults) => {
@@ -43,7 +34,7 @@ const searchGoogle = async (query, numResults) => {
       }
     });
     return results.slice(0, numResults);
-  }, numResults); // Pass numResults as an argument
+  }, numResults);
 
   await browser.close();
   return links;
@@ -62,28 +53,90 @@ const scrapeContent = async (url) => {
   return content;
 };
 
-const appendContentToFile = (content, url) => {
+const appendContentToFile = (content, url, outputFile) => {
   const data = `URL: ${url}\n\n${content}\n\n\n`;
   fs.appendFileSync(outputFile, data, 'utf8');
 };
 
-const main = async () => {
-  await askQuestion(); // Ask user for search query
-  setupOutputFile(); // Setup output file based on searchQuery
+const processName = async (name) => {
+  console.log(`Processing: ${name}`); // Add logging
+
+  if (!name) {
+    console.error('Name is undefined');
+    return;
+  }
+
+  const outputFile = setupOutputFile(name); // Setup output file based on name
 
   try {
-    const links = await searchGoogle(searchQuery, numResults);
+    // Scrape first 10 links
+    const links = await searchGoogle(name, numResults);
     for (let i = 0; i < links.length; i++) {
       const content = await scrapeContent(links[i]);
-      appendContentToFile(content, links[i]);
+      appendContentToFile(content, links[i], outputFile);
       console.log(`Appended content from: ${links[i]}`);
     }
+    
+    // Scrape next 10 links for inspirational quotes
+    const quoteQuery = `inspirational quotes said by ${name}`;
+    const quoteLinks = await searchGoogle(quoteQuery, numResults);
+    for (let i = 0; i < quoteLinks.length; i++) {
+      const content = await scrapeContent(quoteLinks[i]);
+      appendContentToFile(content, quoteLinks[i], outputFile);
+      console.log(`Appended content from: ${quoteLinks[i]}`);
+    }
+
     console.log(`All content saved to ${outputFile}`);
   } catch (error) {
-    console.error("An error occurred:", error);
-  } finally {
-    rl.close(); // Close readline interface
+    console.error(`An error occurred with ${name}:`, error);
   }
+};
+
+const askQuestion = (question) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => rl.question(question, (answer) => {
+    rl.close();
+    resolve(answer);
+  }));
+};
+
+const main = async () => {
+  const columnName = await askQuestion('Enter the column name to use: ');
+  const startIndex = parseInt(await askQuestion('Enter the start index: '), 10);
+  const stopIndex = parseInt(await askQuestion('Enter the stop index: '), 10);
+
+  let processedCount = 0;
+  const names = [];
+
+  fs.createReadStream('CSV File/Finale top 100.csv')
+    .pipe(csv())
+    .on('data', (row) => {
+      if (processedCount < stopIndex) {
+        names.push(row[columnName]);
+        processedCount++;
+      }
+    })
+    .on('end', async () => {
+      console.log('CSV file successfully processed');
+      const selectedNames = names.slice(startIndex - 1, stopIndex);
+      console.log(`Names to process from index ${startIndex} to ${stopIndex}:`);
+      console.log(`Start element: ${selectedNames[0]}`);
+      console.log(`End element: ${selectedNames[selectedNames.length - 1]}`);
+      
+      for (const name of selectedNames) {
+        if (!name) continue;
+        await processName(name);
+      }
+      
+      console.log('Processing complete.');
+    })
+    .on('error', (error) => {
+      console.error('Error reading the CSV file:', error);
+    });
 };
 
 main();
